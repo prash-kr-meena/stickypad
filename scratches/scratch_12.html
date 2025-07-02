@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StickyFlow - Retrospective Board</title>
+
+    <!-- Tailwind CSS v4 -->
+    <!-- We're using the Tailwind v4 script for styling. It provides utility classes to build the design directly in the HTML. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- SortableJS Library -->
+    <!-- This library is used to make the cards draggable and sortable between the columns. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <!-- Custom Styles -->
+    <!-- A few custom styles are added for a better look and feel, like the ghost class for dragging placeholders. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the placeholder element when a card is being dragged */
+        .ghost-card {
+            opacity: 0.5;
+            border: 2px dashed;
+        }
+        /* Style to indicate a paragraph is being edited */
+        p[contenteditable="true"] {
+            outline: none; /* Remove default browser outline */
+            box-shadow: 0 0 0 2px #3498db; /* Use box-shadow for a visible outline */
+            border-radius: 4px; /* Add a slight radius to the highlight */
+        }
+
+        /* Custom Scrollbar Styles */
+        .scroll-container {
+            scrollbar-gutter: stable; /* Prevents layout shift when scrollbar appears */
+        }
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scroll-container::-webkit-scrollbar-track {
+            background: transparent; /* Makes the track invisible */
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+            background-color: transparent; /* Scrollbar is invisible by default */
+            border-radius: 20px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        /* Style for when the scrollbar should be visible */
+        .scrolling::-webkit-scrollbar-thumb {
+            background-color: #F8F8F8; /* Lighter, glassy scrollbar thumb */
+            border: 1px solid #eee; /* Add a subtle border to make it visible */
+        }
+
+        .scrolling::-webkit-scrollbar-thumb:hover {
+            background-color: #e0e0e0; /* Slightly darker on hover */
+        }
+
+
+        /* Styles for the fixed feedback button */
+        .feedback-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem; /* This correctly positions the button on the right */
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        /* Shine/Glow animation */
+        .feedback-button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, rgba(167, 139, 250, 0) 0%, rgba(167, 139, 250, 0.5) 50%, rgba(167, 139, 250, 0) 100%);
+            transform: rotate(45deg);
+            display: none; /* Hidden by default */
+        }
+
+        .shine-effect::after {
+            display: block;
+            animation: shine 4s forwards;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: rotate(45deg) translateX(-200%) translateY(-200%);
+            }
+            100% {
+                transform: rotate(45deg) translateX(200%) translateY(200%);
+            }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-white text-gray-800">
+
+<!-- Main container for the entire application -->
+<div class="flex flex-col h-screen p-4 md:p-6 lg:p-8">
+
+    <!-- Header Section -->
+    <header class="flex items-center justify-between pb-4 border-b shrink-0">
+        <!-- Logo -->
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 bg-yellow-300 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <span class="text-xl font-bold">StickyFlow</span>
+        </div>
+
+        <!-- User Avatars -->
+        <div class="flex items-center space-x-2">
+            <!-- Avatar 1 -->
+            <div class="relative inline-block h-12 w-12">
+                <img class="rounded-full ring-2 ring-white bg-gray-200" src="https://api.dicebear.com/8.x/adventurer/svg?seed=userA&scale=140" alt="User A">
+                <div class="absolute top-0 right-0 h-4 w-4">
+                    <div class="animate-spin rounded-full h-full w-full border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+            </div>
+
+            <!-- Avatar 2 -->
+            <div class="relative inline-block h-12 w-12">
+                <img class="rounded-full ring-2 ring-white bg-gray-200" src="https://api.dicebear.com/8.x/adventurer/svg?seed=userB&scale=140" alt="User B">
+                <span class="absolute top-0 right-0 block h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+            </div>
+
+            <!-- Avatar 3 -->
+            <div class="relative inline-block h-12 w-12">
+                <img class="rounded-full ring-2 ring-white bg-gray-200" src="https://api.dicebear.com/8.x/adventurer/svg?seed=userC&scale=140" alt="User C">
+                <div class="absolute top-0 right-0 h-4 w-4">
+                    <div class="animate-spin rounded-full h-full w-full border-2 border-blue-500 border-t-transparent"></div>
+                </div>
+            </div>
+
+            <!-- Current User Avatar with Underline -->
+            <div class="relative inline-block h-12 w-12">
+                <img class="h-full w-full rounded-full bg-white" src="https://api.dicebear.com/8.x/adventurer/svg?seed=currentUser&scale=140" alt="Current User">
+                <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 h-1 w-6 bg-purple-500 rounded-full"></span>
+            </div>
+
+            <!-- Avatar 4 -->
+            <div class="relative inline-block h-12 w-12">
+                <img class="rounded-full ring-2 ring-white bg-gray-200" src="https://api.dicebear.com/8.x/adventurer/svg?seed=userD&scale=140" alt="User D">
+                <span class="absolute top-0 right-0 block h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg hover:bg-gray-100">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>I'm Finished</span>
+            </button>
+            <button class="px-4 py-2 text-sm font-semibold text-white bg-black rounded-lg hover:bg-gray-800">Present</button>
+        </div>
+    </header>
+
+    <!-- Main content with three columns -->
+    <main id="main-board" class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 overflow-hidden">
+
+        <!-- Column 1: What went well -->
+        <div class="flex flex-col">
+            <h2 class="text-lg font-semibold text-center pb-2 border-b-2 border-gray-600 mb-4 shrink-0">What went well</h2>
+            <div id="col-went-well" class="flex-1 space-y-8 p-2 pt-6 overflow-y-auto scroll-container rounded-lg">
+                <!-- Cards will be added here -->
+            </div>
+        </div>
+
+        <!-- Column 2: What can be improved -->
+        <div class="flex flex-col border-l border-r border-gray-200 px-6">
+            <h2 class="text-lg font-semibold text-center pb-2 border-b-2 border-gray-600 mb-4 shrink-0">What can be improved</h2>
+            <div id="col-can-be-improved" class="flex-1 space-y-8 p-2 pt-6 overflow-y-auto scroll-container rounded-lg">
+                <!-- Cards will be added here -->
+            </div>
+        </div>
+
+        <!-- Column 3: Action Items -->
+        <div class="flex flex-col">
+            <h2 class="text-lg font-semibold text-center pb-2 border-b-2 border-gray-600 mb-4 shrink-0">Action Items</h2>
+            <div id="col-action-items" class="flex-1 space-y-8 p-2 pt-6 overflow-y-auto scroll-container rounded-lg">
+                <!-- Cards will be added here -->
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center pt-4 shrink-0">
+        <div class="inline-block border-2 border-dashed border-gray-300 rounded-lg px-6 py-3">
+            <p class="text-gray-500 text-sm">double click inside a section to add card</p>
+        </div>
+    </footer>
+
+</div>
+
+<!-- Fixed Feedback Button -->
+<button id="feedback-btn" class="feedback-button px-4 py-2 text-sm font-semibold border border-gray-300 rounded-lg bg-white hover:bg-gray-100">Feedback</button>
+
+
+<script>
+    // --- Color Configuration for Columns ---
+    const colorConfig = {
+        'col-went-well': {
+            cardBg: 'bg-green-100',
+            headerBg: 'bg-green-200',
+            text: 'text-green-800',
+            ghostBg: '#d4edda',
+            ghostBorder: '#28a745',
+        },
+        'col-can-be-improved': {
+            cardBg: 'bg-pink-100',
+            headerBg: 'bg-pink-200',
+            text: 'text-pink-800',
+            ghostBg: '#f8d7da',
+            ghostBorder: '#dc3545',
+        },
+        'col-action-items': {
+            cardBg: 'bg-yellow-100',
+            headerBg: 'bg-yellow-200',
+            text: 'text-yellow-800',
+            ghostBg: '#fff3cd',
+            ghostBorder: '#ffc107',
+        }
+    };
+
+    const allColorClasses = {
+        cardBg: ['bg-green-100', 'bg-pink-100', 'bg-yellow-100'],
+        headerBg: ['bg-green-200', 'bg-pink-200', 'bg-yellow-200'],
+        text: ['text-green-800', 'text-pink-800', 'text-yellow-800'],
+    };
+
+    // --- Function to Update Card Colors ---
+    function updateCardColor(card, columnId) {
+        const colors = colorConfig[columnId];
+        if (!colors) return;
+
+        const header = card.querySelector('.card-header');
+        const voteSpan = card.querySelector('.card-vote');
+        const controls = card.querySelector('.card-controls');
+
+        // Remove old colors from all relevant elements
+        card.classList.remove(...allColorClasses.cardBg);
+        if (header) {
+            header.classList.remove(...allColorClasses.headerBg);
+        }
+        if (voteSpan) {
+            voteSpan.classList.remove(...allColorClasses.text);
+        }
+        if (controls) {
+            controls.classList.remove(...allColorClasses.text);
+        }
+
+
+        // Add new colors to all relevant elements
+        card.classList.add(colors.cardBg);
+        if (header) {
+            header.classList.add(colors.headerBg);
+        }
+        if (voteSpan) {
+            voteSpan.classList.add(colors.text);
+        }
+        if (controls) {
+            controls.classList.add(colors.text);
+        }
+    }
+
+    // --- Function to add a new card ---
+    function addCard(columnId, text, isAvatarCard = false, avatarSeed = '') {
+        const column = document.getElementById(columnId);
+        const colors = colorConfig[columnId];
+
+        const cardEl = document.createElement('div');
+        cardEl.className = `card ${colors.cardBg} rounded-lg shadow-sm cursor-grab relative`;
+
+        if(isAvatarCard) {
+            cardEl.innerHTML = `
+                    <div class="card-header ${colors.headerBg} px-3 py-1 flex justify-between items-center rounded-t-lg">
+                        <span class="card-vote text-sm font-semibold ${colors.text}">+${Math.floor(Math.random() * 6)}</span>
+                    </div>
+                    <img class="absolute top-0 right-3 transform -translate-y-1/2 h-10 w-10 rounded-full ring-1 ring-black/10 bg-white" src="https://api.dicebear.com/8.x/adventurer/svg?seed=${avatarSeed}&scale=140" alt="User Avatar">
+                    <div class="p-3">
+                        <p class="text-xs text-gray-700 break-words">${text}</p>
+                    </div>`;
+        } else {
+            cardEl.innerHTML = `
+                    <div class="card-header ${colors.headerBg} px-3 py-1 flex justify-between items-center rounded-t-lg">
+                        <span class="card-vote text-sm font-semibold ${colors.text}">+0</span>
+                        <div class="card-controls flex gap-3 items-center ${colors.text}">
+                            <svg class="w-4 h-4 hover:text-black cursor-pointer delete-btn" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-xs text-gray-700 break-words">${text}</p>
+                    </div>`;
+        }
+
+        column.appendChild(cardEl);
+
+        const p = cardEl.querySelector('p');
+        if(text === 'New Idea...') {
+            p.contentEditable = true;
+            p.focus();
+
+            const range = document.createRange();
+            range.selectNodeContents(p);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            p.addEventListener('blur', () => {
+                p.contentEditable = false;
+                if(p.textContent.trim() === '' || p.textContent.trim() === 'New Idea...') {
+                    cardEl.remove();
+                }
+            }, { once: true });
+        }
+    }
+
+    // --- Populate initial cards ---
+    function populateInitialCards() {
+        addCard('col-went-well', 'The team collaboration on the new feature was outstanding!', true, 'userA');
+        addCard('col-went-well', 'when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+        addCard('col-can-be-improved', 'Some of the API documentation is getting out of date.', true, 'userB');
+        addCard('col-can-be-improved', 'when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+        addCard('col-action-items', 'Plan a session to update all the API docs next sprint.', true, 'userC');
+        addCard('col-action-items', 'when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
+    }
+
+    document.addEventListener('DOMContentLoaded', populateInitialCards);
+
+
+    // --- SortableJS Initialization ---
+    const sortableOptions = {
+        group: 'shared', // This allows dragging cards between columns with the same group name.
+        animation: 150, // Animation speed in ms when sorting.
+        ghostClass: 'ghost-card', // The class applied to the placeholder element.
+        onEnd: function (evt) {
+            // When a card is moved to a new column, update its color.
+            const card = evt.item;
+            const newColumnId = evt.to.id;
+            updateCardColor(card, newColumnId);
+        },
+        onMove: function (evt) {
+            // Dynamically update the ghost card's color based on the target column
+            const ghostEl = document.querySelector('.ghost-card');
+            if (ghostEl) {
+                const targetColId = evt.to.id;
+                const colors = colorConfig[targetColId];
+                if (colors) {
+                    ghostEl.style.backgroundColor = colors.ghostBg;
+                    ghostEl.style.borderColor = colors.ghostBorder;
+                }
+            }
+            return true; // The move is allowed
+        },
+    };
+
+    // Initialize SortableJS on each column.
+    document.querySelectorAll('.scroll-container').forEach(col => {
+        new Sortable(col, sortableOptions);
+    });
+
+    // --- Event Listeners ---
+    const mainBoard = document.getElementById('main-board');
+
+    // Listener for single-click to delete a card
+    mainBoard.addEventListener('click', function(e) {
+        const card = e.target.closest('.card');
+        if (!card) return;
+
+        if (e.target.closest('.delete-btn')) {
+            card.remove();
+        }
+    });
+
+    // Listener for double-clicking to add or edit a card
+    mainBoard.addEventListener('dblclick', function(e){
+        const card = e.target.closest('.card');
+        const columnBody = e.target.closest('.scroll-container');
+
+        // If a card was double-clicked, make it editable.
+        if(card) {
+            const paragraph = card.querySelector('p');
+            if (paragraph) {
+                paragraph.contentEditable = true;
+                paragraph.focus();
+                // Optional: Select all text for easy replacement
+                const sel = window.getSelection();
+                sel.selectAllChildren(paragraph);
+
+                paragraph.addEventListener('blur', () => {
+                    paragraph.contentEditable = false;
+                }, { once: true });
+            }
+            return; // Stop further processing to prevent adding a new card
+        }
+
+        // If the column body was double-clicked (but not a card), add a new card.
+        if(columnBody) {
+            addCard(columnBody.id, 'New Idea...');
+        }
+    });
+
+    // --- Paste as Plain Text ---
+    mainBoard.addEventListener('paste', function(e) {
+        if (e.target.isContentEditable && e.target.tagName === 'P') {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        }
+    });
+
+    // --- Feedback Button Shine Effect ---
+    const feedbackBtn = document.getElementById('feedback-btn');
+    setInterval(() => {
+        feedbackBtn.classList.add('shine-effect');
+        setTimeout(() => {
+            feedbackBtn.classList.remove('shine-effect');
+        }, 4000); // Duration of the shine animation (increased to 4s)
+    }, 20000); // Trigger every 20 seconds
+
+    // --- Auto-hiding scrollbar logic ---
+    let scrollTimeouts = {};
+    document.querySelectorAll('.scroll-container').forEach(column => {
+        column.addEventListener('scroll', function(e) {
+            if (scrollTimeouts[e.target.id]) {
+                clearTimeout(scrollTimeouts[e.target.id]);
+            }
+            e.target.classList.add('scrolling');
+            scrollTimeouts[e.target.id] = setTimeout(() => {
+                e.target.classList.remove('scrolling');
+            }, 3000);
+        });
+    });
+
+</script>
+
+</body>
+</html>
