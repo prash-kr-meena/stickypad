@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Style for the placeholder element when a card is being dragged */
+.ghost-card {
+    opacity: 0.5;
+    border: 2px dashed;
+}
+
+/* Style to indicate a paragraph is being edited */
+p[contenteditable="true"] {
+    outline: none; /* Remove default browser outline */
+    box-shadow: 0 0 0 2px #3498db; /* Use box-shadow for a visible outline */
+    border-radius: 4px; /* Add a slight radius to the highlight */
+}
