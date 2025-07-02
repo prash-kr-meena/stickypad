@@ -44,7 +44,7 @@ watch(
 
             // Optional: Select all text for easy replacement
             const selection = window.getSelection();
-            selection.selectAllChildren(input);
+            selection?.selectAllChildren(input);
 
             input.addEventListener('blur', () => {
               input.contentEditable = "false";

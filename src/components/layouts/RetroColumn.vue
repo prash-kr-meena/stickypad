@@ -5,7 +5,6 @@ import {pushDummyCards, type RetroCardData} from "@/utils/dummyData.ts";
 import {allColorClasses, colorConfig} from "@/config/ColourConfig.ts";
 import {onMounted, ref} from "vue";
 import Sortable from "sortablejs";
-import * as events from "node:events";
 
 const props = defineProps<{
   cardsContainerId: string;
